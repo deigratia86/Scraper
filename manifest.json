@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Great Sage - Amazon Scraper",
+  "version": "1.2.0",
+  "description": "Scrape your Amazon order history for Great Sage budget tracking. Data stays local.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.amazon.com/*",
+    "https://skillacquired.io/*",
+    "https://api.skillacquired.io/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Great Sage Scraper",
+    "default_icon": {
+      "16": "icon-16.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icon-16.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.amazon.com/gp/your-account/order-history*", "https://www.amazon.com/your-orders/*"],
+      "js": ["scraper-core.js", "content.js"],
+      "css": ["content.css"]
+    }
+  ]
+}

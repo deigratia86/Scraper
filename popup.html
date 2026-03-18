@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      width: 360px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
+      color: #f5f5f5;
+      padding: 16px;
+    }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+    }
+    
+    .header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #00d4ff 0%, #8b5cf6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .header-subtitle {
+      font-size: 11px;
+      color: #8888aa;
+    }
+    
+    .header-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: contain;
+      box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+    }
+    
+    .status {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+    
+    .status.info {
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      color: #00d4ff;
+    }
+    
+    .status.success {
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #4ade80;
+    }
+    
+    .status.warning {
+      background: rgba(234, 179, 8, 0.15);
+      border: 1px solid rgba(234, 179, 8, 0.3);
+      color: #facc15;
+    }
+    
+    .status.error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+    
+    .section {
+      margin-bottom: 16px;
+    }
+    
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+      color: #000;
+      font-weight: 600;
+    }
+    
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #5ee7ff 0%, #00d4ff 100%);
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+    }
+    
+    .btn-secondary {
+      background: rgba(0, 212, 255, 0.1);
+      color: #00d4ff;
+      border: 1px solid rgba(0, 212, 255, 0.3);
+    }
+    
+    .btn-secondary:hover {
+      background: rgba(0, 212, 255, 0.2);
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .btn-group .btn {
+      flex: 1;
+    }
+    
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .stat {
+      background: #242424;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #00d4ff;
+    }
+    
+    .stat-label {
+      font-size: 11px;
+      color: #888;
+      margin-top: 4px;
+    }
+    
+    .options {
+      background: #242424;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+    }
+    
+    .option:not(:last-child) {
+      border-bottom: 1px solid #333;
+    }
+    
+    .option label {
+      font-size: 13px;
+    }
+    
+    .option select, .option input {
+      background: #1a1a1a;
+      border: 1px solid #444;
+      color: #f5f5f5;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    
+    .progress {
+      height: 6px;
+      background: #333;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: #00d4ff;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    
+    .orders-preview {
+      max-height: 150px;
+      overflow-y: auto;
+      background: #242424;
+      border-radius: 8px;
+      padding: 8px;
+      margin-bottom: 16px;
+      font-size: 12px;
+    }
+    
+    .order-item {
+      padding: 6px 8px;
+      border-bottom: 1px solid #333;
+    }
+    
+    .order-item:last-child {
+      border-bottom: none;
+    }
+    
+    .order-date {
+      color: #888;
+    }
+    
+    .order-amount {
+      color: #4ade80;
+      font-weight: 500;
+    }
+    
+    .footer {
+      font-size: 11px;
+      color: #666;
+      text-align: center;
+      padding-top: 12px;
+      border-top: 1px solid #333;
+    }
+    
+    .footer a {
+      color: #00d4ff;
+      text-decoration: none;
+    }
+    
+    .btn:focus-visible {
+      outline: 2px solid #00d4ff;
+      outline-offset: 2px;
+    }
+    
+    select:focus-visible, input:focus-visible {
+      outline: 2px solid #00d4ff;
+      outline-offset: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div id="authLock" style="display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 260px; text-align: center; padding: 32px 24px;">
+    <div style="font-size: 40px; margin-bottom: 16px;">🔒</div>
+    <div style="font-size: 15px; font-weight: 600; margin-bottom: 8px;">Great Sage Login Required</div>
+    <div style="font-size: 12px; color: #888; margin-bottom: 20px; line-height: 1.5;">Sign in to your Great Sage account to use the Amazon Scraper.</div>
+    <a href="https://skillacquired.io/login.html" target="_blank" style="display: inline-block; padding: 10px 24px; background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%); color: #000; font-weight: 600; border-radius: 8px; text-decoration: none; font-size: 13px;">Sign In</a>
+  </div>
+  <div id="mainUI">
+  <div class="header">
+    <img class="header-icon" src="icon-128.png" alt="Great Sage">
+    <div>
+      <h1>Great Sage Scraper</h1>
+      <div class="header-subtitle">大賢者 • Amazon Orders</div>
+    </div>
+  </div>
+  
+  <div id="status" class="status info">
+    Navigate to your Amazon Order History to begin scraping.
+  </div>
+  
+  <div class="section">
+    <div class="section-title">Options</div>
+    <div class="options">
+      <div class="option">
+        <label>Time Period</label>
+        <select id="timePeriod">
+          <option value="last30">Last 30 Days</option>
+          <option value="months-3">Last 3 Months</option>
+          <option value="months-6">Last 6 Months</option>
+          <option value="year-2025">2025</option>
+          <option value="year-2024">2024</option>
+          <option value="year-2026">2026</option>
+          <option value="all">All Orders</option>
+        </select>
+      </div>
+
+    </div>
+  </div>
+  
+  <div id="statsSection" class="stats" style="display: none;">
+    <div class="stat">
+      <div class="stat-value" id="orderCount">0</div>
+      <div class="stat-label">Orders Found</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="totalSpent">$0</div>
+      <div class="stat-label">Total Spent</div>
+    </div>
+  </div>
+  
+  <div id="progressSection" style="display: none;">
+    <div class="section-title">Scraping Progress</div>
+    <div class="progress">
+      <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+    </div>
+    <div style="font-size: 12px; color: #888; margin-top: 6px;" id="progressText">Starting...</div>
+  </div>
+  
+  <div id="previewSection" class="orders-preview" style="display: none;">
+  </div>
+  
+  <div class="section">
+    <button id="scrapeBtn" class="btn btn-primary" aria-label="Start scraping Amazon orders">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      Start Scraping
+    </button>
+  </div>
+  
+  <div id="sendSection" style="display: none;">
+    <button id="sendBtn" class="btn btn-primary" aria-label="Send orders to Great Sage dashboard" style="margin-bottom: 8px; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M5 12h14"/>
+        <polyline points="12 5 19 12 12 19"/>
+      </svg>
+      Send to Dashboard
+    </button>
+    <button id="clearBtn" class="btn btn-secondary" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color: #f87171; font-size: 12px;" aria-label="Clear all scraped orders">
+      Clear All Orders
+    </button>
+  </div>
+  
+  <div id="pendingSection" style="display: none; margin-top: 12px;">
+    <div style="background: rgba(234, 179, 8, 0.15); border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 8px; padding: 12px;">
+      <div style="font-size: 12px; color: #fbbf24; margin-bottom: 8px;">
+        ⚠️ <span id="pendingCount">0</span> orders need item details (e.g., Grocery orders)
+      </div>
+      <button id="fetchDetailsBtn" class="btn btn-secondary" style="background: rgba(234, 179, 8, 0.2); border-color: rgba(234, 179, 8, 0.4); color: #fbbf24;">
+        Fetch Missing Details
+      </button>
+    </div>
+  </div>
+  
+  <div class="footer">
+    Data syncs to your Great Sage account.<br>
+    <a href="https://www.amazon.com/gp/your-account/order-history" target="_blank">Open Amazon Orders →</a>
+  </div>
+  </div>
+  
+  <script src="scraper-core.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
