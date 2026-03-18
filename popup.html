@@ -267,12 +267,7 @@
   </style>
 </head>
 <body>
-  <div id="authLock" style="display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 260px; text-align: center; padding: 32px 24px;">
-    <div style="font-size: 40px; margin-bottom: 16px;">🔒</div>
-    <div style="font-size: 15px; font-weight: 600; margin-bottom: 8px;">Great Sage Login Required</div>
-    <div style="font-size: 12px; color: #888; margin-bottom: 20px; line-height: 1.5;">Sign in to your Great Sage account to use the Amazon Scraper.</div>
-    <a href="https://skillacquired.io/login.html" target="_blank" style="display: inline-block; padding: 10px 24px; background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%); color: #000; font-weight: 600; border-radius: 8px; text-decoration: none; font-size: 13px;">Sign In</a>
-  </div>
+
   <div id="mainUI">
   <div class="header">
     <img class="header-icon" src="icon-128.png" alt="Great Sage">
@@ -337,14 +332,27 @@
     </button>
   </div>
   
-  <div id="sendSection" style="display: none;">
-    <button id="sendBtn" class="btn btn-primary" aria-label="Send orders to Great Sage dashboard" style="margin-bottom: 8px; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M5 12h14"/>
-        <polyline points="12 5 19 12 12 19"/>
-      </svg>
-      Send to Dashboard
-    </button>
+  <div id="exportSection" style="display: none; flex-direction: column; gap: 8px;">
+    <div class="option" style="background: #242424; padding: 8px 12px; border-radius: 8px;">
+      <label style="font-size: 13px;">Format</label>
+      <select id="exportFormat">
+        <option value="csv">CSV (Finance Tracker)</option>
+        <option value="json">JSON</option>
+      </select>
+    </div>
+    <div class="btn-group">
+      <button id="exportBtn" class="btn btn-primary" aria-label="Download scraped orders">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download
+      </button>
+      <button id="copyBtn" class="btn btn-secondary" aria-label="Copy scraped orders to clipboard">
+        Copy
+      </button>
+    </div>
     <button id="clearBtn" class="btn btn-secondary" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color: #f87171; font-size: 12px;" aria-label="Clear all scraped orders">
       Clear All Orders
     </button>
@@ -362,7 +370,7 @@
   </div>
   
   <div class="footer">
-    Data syncs to your Great Sage account.<br>
+    Data stays local on your device.<br>
     <a href="https://www.amazon.com/gp/your-account/order-history" target="_blank">Open Amazon Orders →</a>
   </div>
   </div>

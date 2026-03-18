@@ -9,9 +9,7 @@
     "scripting"
   ],
   "host_permissions": [
-    "https://www.amazon.com/*",
-    "https://skillacquired.io/*",
-    "https://api.skillacquired.io/*"
+    "https://www.amazon.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
