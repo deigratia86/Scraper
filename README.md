@@ -16,7 +16,7 @@ Chrome extension that scrapes your Amazon order history and exports it as CSV fo
 1. Open `chrome://extensions`
 2. Enable "Developer mode" (top right)
 3. Click "Load unpacked"
-4. Select the `Scraper/` folder
+4. Select this folder (or the folder you cloned the repo into)
 
 ## Usage
 1. Navigate to [Amazon Order History](https://www.amazon.com/gp/your-account/order-history)
@@ -24,7 +24,7 @@ Chrome extension that scrapes your Amazon order history and exports it as CSV fo
 3. Select time period and click "Start Scraping"
 4. Navigate through order pages (scraping is persistent across page loads)
 5. Click "Stop Scraping" when done
-6. Export as CSV and upload to Great Sage Finance Tracker
+6. Export as CSV for use in your finance tracker (or import into [Great Sage](https://skillacquired.io))
 
 ## File Structure
 - `manifest.json` - Chrome extension manifest (v3)
@@ -32,7 +32,7 @@ Chrome extension that scrapes your Amazon order history and exports it as CSV fo
 - `popup.html` / `popup.js` - Extension popup UI
 - `content.js` - Auto-scrape on page navigation
 - `content.css` - Scraping indicator styles
-- `icon.svg` - Extension icon (Rimuru with data brackets)
+- `icon-16/48/128.png` - Extension icons
 
 ## Version History
 - **v1.2.0** (Mar 2026): Code dedup via scraper-core.js, error handling, exponential backoff, DOM detection, a11y, icon redesign
