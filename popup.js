@@ -85,8 +85,11 @@ function updateStats(orders) {
   const total = orders.reduce((sum, order) => sum + (order.total || 0), 0);
   totalSpentEl.textContent = `$${total.toFixed(2)}`;
   
-  // Check for orders needing detail fetch
-  const pendingOrders = orders.filter(o => o.needsDetailFetch);
+  // Check for orders needing detail fetch (no items OR multi-item with missing prices)
+  const pendingOrders = orders.filter(o => 
+    o.needsDetailFetch || 
+    (o.items && o.items.length > 1 && o.items.some(i => i.price === null || i.price <= 0))
+  );
   const pendingSection = document.getElementById('pendingSection');
   const pendingCountEl = document.getElementById('pendingCount');
   
@@ -232,10 +235,14 @@ clearBtnEl.addEventListener('click', async () => {
 document.getElementById('fetchDetailsBtn')?.addEventListener('click', async () => {
   const stored = await chrome.storage.local.get(['scrapedOrders']);
   const orders = stored.scrapedOrders || [];
-  const pendingOrders = orders.filter(o => o.needsDetailFetch && o.detailsUrl);
+  // Include orders flagged for detail fetch OR multi-item orders missing per-item prices
+  const pendingOrders = orders.filter(o => 
+    (o.needsDetailFetch || (o.items && o.items.length > 1 && o.items.some(i => i.price === null || i.price <= 0)))
+    && o.detailsUrl
+  );
   
   if (pendingOrders.length === 0) {
-    setStatus('info', 'No orders need detail fetching.');
+    setStatus('info', 'No orders need detail fetching (or missing detail URLs).');
     return;
   }
   
@@ -265,21 +272,58 @@ document.getElementById('fetchDetailsBtn')?.addEventListener('click', async () =
             const items = [];
             const seenItems = new Set();
             
-            // Find product links on details page
-            const productLinks = doc.querySelectorAll('a[href*="/gp/product/"], a[href*="/dp/"]');
-            productLinks.forEach(link => {
-              const name = link.textContent?.trim();
-              if (name && name.length > 10 && name.length < 300 && !seenItems.has(name)) {
+            // Strategy 1: Shipment item blocks (most reliable on detail pages)
+            const itemBlocks = doc.querySelectorAll('[class*="shipment"] [class*="item"], [class*="od-shipment"] .a-fixed-left-grid');
+            itemBlocks.forEach(block => {
+              const link = block.querySelector('a[href*="/gp/product/"], a[href*="/dp/"]');
+              const name = link?.textContent?.trim();
+              if (!name || name.length < 5 || name.length > 300 || seenItems.has(name)) return;
+              seenItems.add(name);
+              
+              let price = null;
+              // Look for price in .a-color-price or .a-price .a-offscreen
+              const priceEl = block.querySelector('.a-color-price, .a-price .a-offscreen');
+              if (priceEl) {
+                const m = priceEl.textContent?.match(/\$\s*([\d,]+\.\d{2})/);
+                if (m) price = parseFloat(m[1].replace(/,/g, ''));
+              }
+              // Fallback: any dollar amount in the item row
+              if (price === null) {
+                const allPrices = [...block.textContent.matchAll(/\$\s*([\d,]+\.\d{2})/g)]
+                  .map(m => parseFloat(m[1].replace(/,/g, '')))
+                  .filter(p => p > 0 && p < 5000);
+                if (allPrices.length === 1) price = allPrices[0];
+              }
+              
+              items.push({
+                name,
+                price,
+                asin: link.href?.match(/\/(?:dp|product)\/([A-Z0-9]{10})/)?.[1] || null
+              });
+            });
+            
+            // Strategy 2: Fallback to product links if strategy 1 found nothing
+            if (items.length === 0) {
+              doc.querySelectorAll('a[href*="/gp/product/"], a[href*="/dp/"]').forEach(link => {
+                const name = link.textContent?.trim();
+                if (!name || name.length < 5 || name.length > 300 || seenItems.has(name)) return;
                 seenItems.add(name);
-                const parent = link.closest('.a-row, .a-column, [class*="item"]');
-                const priceMatch = parent?.textContent?.match(/\$\s*([\d,]+\.\d{2})/);
+                const ctx = link.closest('.a-row, .a-column, [class*="item"], .a-fixed-left-grid-col');
+                let price = null;
+                if (ctx) {
+                  const priceEl = ctx.querySelector('.a-color-price, .a-price .a-offscreen');
+                  if (priceEl) {
+                    const m = priceEl.textContent?.match(/\$\s*([\d,]+\.\d{2})/);
+                    if (m) price = parseFloat(m[1].replace(/,/g, ''));
+                  }
+                }
                 items.push({
-                  name: name,
-                  price: priceMatch ? parseFloat(priceMatch[1].replace(/,/g, '')) : null,
+                  name,
+                  price,
                   asin: link.href?.match(/\/(?:dp|product)\/([A-Z0-9]{10})/)?.[1] || null
                 });
-              }
-            });
+              });
+            }
             
             return items.length > 0 ? items : null;
           } catch (e) {
@@ -365,27 +409,72 @@ copyBtnEl.addEventListener('click', async () => {
 });
 
 // Generate CSV format for Finance Tracker (uses shared smartCategorize from scraper-core.js)
+// v1.3.0: Per-item rows with OrderTotal column for bank matching
 function generateCSV(orders) {
-  const headers = ['Date', 'Amount', 'Description', 'Category', 'OrderID', 'Items', 'Status'];
+  const headers = ['Date', 'Amount', 'Description', 'Category', 'OrderID', 'OrderTotal', 'ItemCount', 'Items', 'Status'];
   const rows = [headers.join(',')];
   
   orders.forEach(order => {
-    const allItemNames = order.items?.map(i => i.name).join(' ') || '';
-    const primaryItem = order.items?.[0]?.name || 'Amazon Purchase';
-    const cleanDesc = primaryItem.replace(/"/g, '""').replace(/\n/g, ' ').substring(0, 200);
-    const category = smartCategorize(allItemNames);
-    const itemsJson = JSON.stringify(order.items || []).replace(/"/g, '""');
+    const orderItems = order.items || [];
+    const itemCount = orderItems.length;
+    const orderTotal = order.total || 0;
+    const itemsJson = JSON.stringify(orderItems).replace(/"/g, '""');
+    const status = order.status || 'Unknown';
     
-    const row = [
-      `"${order.date}"`,
-      order.total?.toFixed(2) || '0.00',
-      `"${cleanDesc}"`,
-      category,
-      order.orderId,
-      `"${itemsJson}"`,
-      `"${order.status || 'Unknown'}"`
-    ];
-    rows.push(row.join(','));
+    // Determine if we can split into per-item rows
+    const itemsWithPrices = orderItems.filter(i => i.price !== null && i.price > 0);
+    const canSplitItems = itemCount > 1 && itemsWithPrices.length > 0;
+    
+    if (canSplitItems) {
+      // Per-item rows: each item gets its own CSV row
+      const pricedTotal = itemsWithPrices.reduce((s, i) => s + i.price, 0);
+      const unpricedItems = orderItems.filter(i => i.price === null || i.price <= 0);
+      const remainder = Math.max(0, orderTotal - pricedTotal);
+      
+      orderItems.forEach((item, idx) => {
+        let amount;
+        if (item.price !== null && item.price > 0) {
+          amount = item.price;
+        } else if (unpricedItems.length > 0 && remainder > 0) {
+          // Distribute remainder evenly among unpriced items
+          amount = Math.round((remainder / unpricedItems.length) * 100) / 100;
+        } else {
+          amount = 0;
+        }
+        
+        const cleanDesc = (item.name || 'Amazon Item').replace(/"/g, '""').replace(/\n/g, ' ').substring(0, 200);
+        const category = smartCategorize(item.name || '');
+        
+        rows.push([
+          `"${order.date}"`,
+          amount.toFixed(2),
+          `"${cleanDesc}"`,
+          category,
+          order.orderId,
+          orderTotal.toFixed(2),
+          itemCount,
+          `"${itemsJson}"`,
+          `"${status}"`
+        ].join(','));
+      });
+    } else {
+      // Single row: either 1 item, or multi-item without any prices
+      const allItemNames = orderItems.map(i => i.name).join(', ');
+      const cleanDesc = (allItemNames || 'Amazon Purchase').replace(/"/g, '""').replace(/\n/g, ' ').substring(0, 200);
+      const category = smartCategorize(allItemNames);
+      
+      rows.push([
+        `"${order.date}"`,
+        orderTotal.toFixed(2),
+        `"${cleanDesc}"`,
+        category,
+        order.orderId,
+        orderTotal.toFixed(2),
+        itemCount,
+        `"${itemsJson}"`,
+        `"${status}"`
+      ].join(','));
+    }
   });
   
   return rows.join('\n');

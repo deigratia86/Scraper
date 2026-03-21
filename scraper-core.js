@@ -69,19 +69,47 @@ function scrapeOrdersFromDOM(rootElement) {
         if (prices.length) total = Math.max(...prices);
       }
 
-      // Items
+      // Items - extract per-item names and prices
       const items = [];
       const seenItems = new Set();
+
+      // Strategy 1: Product links with nearby price extraction
       container.querySelectorAll('a[href*="/gp/product/"], a[href*="/dp/"]').forEach(link => {
         const name = link.textContent?.trim();
         if (name && name.length > 3 && name.length < 300 && !seenItems.has(name)) {
           seenItems.add(name);
-          const parent = link.closest('[class*="item"], [class*="product"], .a-row, .a-column');
-          const priceMatch = parent?.textContent?.match(/\$\s*([\d,]+\.\d{2})/);
-          items.push({
-            name, price: priceMatch ? parseFloat(priceMatch[1].replace(/,/g, '')) : null,
-            asin: link.href?.match(/\/(?:dp|product)\/([A-Z0-9]{10})/)?.[1] || null
-          });
+          let price = null;
+          const asin = link.href?.match(/\/(?:dp|product)\/([A-Z0-9]{10})/)?.[1] || null;
+
+          // Walk up DOM to find price near this item
+          const searchContexts = [
+            link.closest('[class*="item"], [class*="product"], [class*="shipment"]'),
+            link.closest('.a-row')?.parentElement,
+            link.closest('.a-fixed-left-grid-col, .a-column'),
+            link.parentElement?.parentElement?.parentElement
+          ].filter(Boolean);
+
+          for (const ctx of searchContexts) {
+            if (price !== null) break;
+            // Amazon .a-price .a-offscreen or .a-color-price patterns
+            const priceEls = ctx.querySelectorAll('.a-price .a-offscreen, [class*="price"] .a-offscreen, .a-color-price');
+            for (const el of priceEls) {
+              const m = el.textContent?.match(/\$\s*([\d,]+\.\d{2})/);
+              if (m) {
+                const p = parseFloat(m[1].replace(/,/g, ''));
+                if (p > 0 && p <= total) { price = p; break; }
+              }
+            }
+            // Fallback: sole dollar amount in context block (not the order total)
+            if (price === null) {
+              const ctxPrices = [...ctx.textContent.matchAll(/\$\s*([\d,]+\.\d{2})/g)]
+                .map(m => parseFloat(m[1].replace(/,/g, '')))
+                .filter(p => p > 0 && p < total && p !== total);
+              if (ctxPrices.length === 1) price = ctxPrices[0];
+            }
+          }
+
+          items.push({ name, price, asin });
         }
       });
 
@@ -98,13 +126,18 @@ function scrapeOrdersFromDOM(rootElement) {
         });
       }
 
-      // Still no items: get details URL for later fetch
+      // Determine if we need detail page fetch
       let detailsUrl = null;
       let needsDetailFetch = false;
+      const detailsLink = container.querySelector('a[href*="order-details"], a[href*="gp/your-account/order-details"]');
+
       if (items.length === 0) {
-        const detailsLink = container.querySelector('a[href*="order-details"], a[href*="gp/your-account/order-details"]');
+        // No items at all
         if (detailsLink) { detailsUrl = detailsLink.href; needsDetailFetch = true; }
         items.push({ name: 'Amazon Purchase (details pending)', price: total, asin: null });
+      } else if (items.length > 1 && items.some(i => i.price === null)) {
+        // Multi-item order with missing per-item prices
+        if (detailsLink) { detailsUrl = detailsLink.href; needsDetailFetch = true; }
       }
 
       // Status
