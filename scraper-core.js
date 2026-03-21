@@ -73,26 +73,24 @@ function scrapeOrdersFromDOM(rootElement) {
       const items = [];
       const seenItems = new Set();
 
+      // Ad/promo link filter
+      const adPatterns = /\b(secured card|business card|amazon card|credit card|gift card|rewards|sign.?up|apply now)\b/i;
+
       // Strategy 1: Product links with nearby price extraction
       container.querySelectorAll('a[href*="/gp/product/"], a[href*="/dp/"]').forEach(link => {
         const name = link.textContent?.trim();
-        if (name && name.length > 3 && name.length < 300 && !seenItems.has(name)) {
+        if (name && name.length > 3 && name.length < 300 && !seenItems.has(name) && !adPatterns.test(name)) {
           seenItems.add(name);
           let price = null;
           const asin = link.href?.match(/\/(?:dp|product)\/([A-Z0-9]{10})/)?.[1] || null;
 
-          // Walk up DOM to find price near this item
-          const searchContexts = [
-            link.closest('[class*="item"], [class*="product"], [class*="shipment"]'),
-            link.closest('.a-row')?.parentElement,
-            link.closest('.a-fixed-left-grid-col, .a-column'),
-            link.parentElement?.parentElement?.parentElement
-          ].filter(Boolean);
-
-          for (const ctx of searchContexts) {
-            if (price !== null) break;
-            // Amazon .a-price .a-offscreen or .a-color-price patterns
-            const priceEls = ctx.querySelectorAll('.a-price .a-offscreen, [class*="price"] .a-offscreen, .a-color-price');
+          // Walk up DOM ancestors to find price near this item
+          let ancestor = link;
+          for (let lvl = 0; lvl < 6 && ancestor && price === null; lvl++) {
+            ancestor = ancestor.parentElement;
+            if (!ancestor) break;
+            // Check for Amazon price elements
+            const priceEls = ancestor.querySelectorAll('.a-price .a-offscreen, [class*="price"] .a-offscreen, .a-color-price');
             for (const el of priceEls) {
               const m = el.textContent?.match(/\$\s*([\d,]+\.\d{2})/);
               if (m) {
@@ -100,12 +98,12 @@ function scrapeOrdersFromDOM(rootElement) {
                 if (p > 0 && p <= total) { price = p; break; }
               }
             }
-            // Fallback: sole dollar amount in context block (not the order total)
+            // Fallback: sole dollar amount in ancestor (not the order total)
             if (price === null) {
-              const ctxPrices = [...ctx.textContent.matchAll(/\$\s*([\d,]+\.\d{2})/g)]
+              const ctxPrices = [...ancestor.textContent.matchAll(/\$\s*([\d,]+\.\d{2})/g)]
                 .map(m => parseFloat(m[1].replace(/,/g, '')))
                 .filter(p => p > 0 && p < total && p !== total);
-              if (ctxPrices.length === 1) price = ctxPrices[0];
+              if (ctxPrices.length >= 1 && ctxPrices.length <= 2) price = ctxPrices[0];
             }
           }
 

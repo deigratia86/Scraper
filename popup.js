@@ -302,26 +302,37 @@ document.getElementById('fetchDetailsBtn')?.addEventListener('click', async () =
               });
             });
             
-            // Strategy 2: Fallback to product links if strategy 1 found nothing
+            // Strategy 2: Fallback - walk up DOM from each product link to find prices
             if (items.length === 0) {
+              const adPatterns = /\b(secured card|business card|amazon card|credit card|gift card|rewards|sign.?up|apply now)\b/i;
               doc.querySelectorAll('a[href*="/gp/product/"], a[href*="/dp/"]').forEach(link => {
                 const name = link.textContent?.trim();
                 if (!name || name.length < 5 || name.length > 300 || seenItems.has(name)) return;
+                if (adPatterns.test(name)) return; // Skip Amazon promotional links
                 seenItems.add(name);
-                const ctx = link.closest('.a-row, .a-column, [class*="item"], .a-fixed-left-grid-col');
                 let price = null;
-                if (ctx) {
-                  const priceEl = ctx.querySelector('.a-color-price, .a-price .a-offscreen');
+                const asin = link.href?.match(/\/(?:dp|product)\/([A-Z0-9]{10})/)?.[1] || null;
+
+                // Walk up DOM ancestors looking for price elements
+                let el = link;
+                for (let lvl = 0; lvl < 6 && el && price === null; lvl++) {
+                  el = el.parentElement;
+                  if (!el) break;
+                  const priceEl = el.querySelector('.a-color-price, .a-price .a-offscreen');
                   if (priceEl) {
                     const m = priceEl.textContent?.match(/\$\s*([\d,]+\.\d{2})/);
                     if (m) price = parseFloat(m[1].replace(/,/g, ''));
                   }
+                  if (price === null) {
+                    const rawPrices = [...el.textContent.matchAll(/\$\s*([\d,]+\.\d{2})/g)]
+                      .map(m => parseFloat(m[1].replace(/,/g, '')))
+                      .filter(p => p > 0 && p < 5000);
+                    // Only use if exactly 1-2 prices found (avoids grabbing from too-wide context)
+                    if (rawPrices.length >= 1 && rawPrices.length <= 2) price = rawPrices[0];
+                  }
                 }
-                items.push({
-                  name,
-                  price,
-                  asin: link.href?.match(/\/(?:dp|product)\/([A-Z0-9]{10})/)?.[1] || null
-                });
+
+                items.push({ name, price, asin });
               });
             }
             
